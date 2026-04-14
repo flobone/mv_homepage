@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   deleteCalendarSource,
   deleteExclusionRule,
@@ -211,7 +212,7 @@ export default async function AdminEventsPage() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-3">
-                      <h4 className="text-lg font-semibold text-slate-900">{event.title}</h4>
+                      <h4 className="text-lg font-semibold text-slate-900">{event.overrideTitle ?? event.title}</h4>
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-semibold ${
                           event.isPublished ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
@@ -230,7 +231,7 @@ export default async function AdminEventsPage() {
 
                     <p className="mt-2 text-sm text-slate-500">
                       {formatDate(event.startsAt)} · {formatTimeRange(event.startsAt, event.endsAt)}
-                      {event.location ? ` · ${event.location}` : ""}
+                      {(event.overrideLocation ?? event.location) ? ` · ${event.overrideLocation ?? event.location}` : ""}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
                       Quelle: {event.source?.name ?? "manuell / unbekannt"}
@@ -244,6 +245,9 @@ export default async function AdminEventsPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
+                    <Link href={`/admin/events/${event.id}/edit`} className="button-secondary">
+                      Overrides bearbeiten
+                    </Link>
                     <form
                       action={async () => {
                         "use server";

@@ -24,6 +24,13 @@ const ruleSchema = z.object({
   isActive: z.boolean(),
 });
 
+const eventOverrideSchema = z.object({
+  overrideTitle: z.string().trim().optional(),
+  overrideDescription: z.string().trim().optional(),
+  overrideLocation: z.string().trim().optional(),
+  overrideImageUrl: z.union([z.string().trim().url("Bitte eine gültige Bild-URL eingeben."), z.literal("")]).optional(),
+});
+
 function revalidateEventPaths() {
   revalidatePath("/admin/events");
   revalidatePath("/termine");
@@ -195,4 +202,51 @@ export async function toggleEventPublished(eventId: string): Promise<void> {
   });
 
   revalidateEventPaths();
+}
+
+
+export async function updateEventOverrides(
+  eventId: string,
+  _prevState: EventsFormState | undefined,
+  formData: FormData,
+): Promise<EventsFormState> {
+  const parsed = eventOverrideSchema.safeParse({
+    overrideTitle: String(formData.get("overrideTitle") ?? ""),
+    overrideDescription: String(formData.get("overrideDescription") ?? ""),
+    overrideLocation: String(formData.get("overrideLocation") ?? ""),
+    overrideImageUrl: String(formData.get("overrideImageUrl") ?? ""),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Die Eingaben sind ungültig." };
+  }
+
+  await prisma.event.update({
+    where: { id: eventId },
+    data: {
+      overrideTitle: parsed.data.overrideTitle || null,
+      overrideDescription: parsed.data.overrideDescription || null,
+      overrideLocation: parsed.data.overrideLocation || null,
+      overrideImageUrl: parsed.data.overrideImageUrl || null,
+    },
+  });
+
+  revalidateEventPaths();
+  revalidatePath(`/admin/events/${eventId}/edit`);
+  return { success: "Overrides wurden gespeichert." };
+}
+
+export async function resetEventOverrides(eventId: string): Promise<void> {
+  await prisma.event.update({
+    where: { id: eventId },
+    data: {
+      overrideTitle: null,
+      overrideDescription: null,
+      overrideLocation: null,
+      overrideImageUrl: null,
+    },
+  });
+
+  revalidateEventPaths();
+  revalidatePath(`/admin/events/${eventId}/edit`);
 }

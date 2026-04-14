@@ -70,8 +70,8 @@ export default async function HomePage() {
           {upcomingEvents.map((event) => (
             <article key={event.id} className="card p-6">
               <p className="text-sm font-semibold text-[#7b1f3a]">{formatDate(event.startsAt)}</p>
-              <h3 className="mt-2 text-xl font-semibold text-slate-900">{event.title}</h3>
-              <p className="mt-2 text-sm text-slate-600">{event.location ?? "Ort folgt"}</p>
+              <h3 className="mt-2 text-xl font-semibold text-slate-900">{event.overrideTitle ?? event.title}</h3>
+              <p className="mt-2 text-sm text-slate-600">{event.overrideLocation ?? event.location ?? "Ort folgt"}</p>
             </article>
           ))}
         </div>

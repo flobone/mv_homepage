@@ -44,23 +44,27 @@ model NewsPost {
 }
 
 model Event {
-  id              String          @id @default(cuid())
-  title           String
-  slug            String?         @unique
-  description     String?
-  location        String?
-  startsAt        DateTime
-  endsAt          DateTime?
-  isPublished     Boolean         @default(true)
-  isHidden        Boolean         @default(false)
-  externalUid     String?         @unique
-  categories      String[]        @default([])
-  exclusionReason String?
-  lastImportedAt  DateTime?
-  sourceId        String?
-  source          CalendarSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id                  String          @id @default(cuid())
+  title               String
+  slug                String?         @unique
+  description         String?
+  location            String?
+  startsAt            DateTime
+  endsAt              DateTime?
+  isPublished         Boolean         @default(true)
+  isHidden            Boolean         @default(false)
+  externalUid         String?         @unique
+  categories          String[]        @default([])
+  exclusionReason     String?
+  lastImportedAt      DateTime?
+  overrideTitle       String?
+  overrideDescription String?
+  overrideLocation    String?
+  overrideImageUrl    String?
+  sourceId            String?
+  source              CalendarSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
   @@index([startsAt])
 }
