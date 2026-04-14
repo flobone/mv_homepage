@@ -17,16 +17,41 @@ async function main() {
     },
   });
 
-  await prisma.event.upsert({
-    where: { slug: 'adventsnachmittag-der-jugend-2025' },
+  const source = await prisma.calendarSource.upsert({
+    where: { slug: 'vereinskalender' },
     update: {},
     create: {
-      slug: 'adventsnachmittag-der-jugend-2025',
-      title: 'Adventsnachmittag der Jugend',
+      name: 'Vereinskalender',
+      slug: 'vereinskalender',
+      icsUrl: process.env.CALENDAR_ICS_URL ?? 'https://example.com/calendar.ics',
+      isActive: true,
+    },
+  });
+
+  await prisma.calendarExclusionRule.upsert({
+    where: { id: 'seed-rule-title-probe' },
+    update: {},
+    create: {
+      id: 'seed-rule-title-probe',
+      sourceId: source.id,
+      kind: 'TITLE_CONTAINS',
+      value: 'Probe',
+      description: 'Interne Proben nicht öffentlich anzeigen',
+      isActive: true,
+    },
+  });
+
+  await prisma.event.upsert({
+    where: { slug: 'fruehschoppen-zum-1-mai-2026' },
+    update: {},
+    create: {
+      slug: 'fruehschoppen-zum-1-mai-2026',
+      title: 'Frühschoppen zum 1. Mai',
       location: 'Müsen',
-      startsAt: new Date('2025-12-14T15:00:00+01:00'),
-      endsAt: new Date('2025-12-14T17:00:00+01:00'),
+      startsAt: new Date('2026-05-01T11:00:00+02:00'),
+      endsAt: new Date('2026-05-01T16:00:00+02:00'),
       isPublished: true,
+      isHidden: false,
     },
   });
 

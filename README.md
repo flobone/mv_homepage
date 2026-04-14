@@ -1,11 +1,7 @@
 # Musikverein Müsen 1919 e.V. – Website
 
 Modernes Starter-Projekt für den Relaunch der Website des Musikverein Müsen 1919 e.V.
-mit einer finalen Zielarchitektur auf Basis von:
-
-- Next.js auf Vercel
-- Neon Postgres für strukturierte Inhalte
-- Vercel Blob für Bilder, PDFs und sonstige Dateien
+auf Basis von Next.js, TypeScript, Prisma, Neon und Vercel Blob.
 
 ## Enthaltene Seiten
 
@@ -16,11 +12,18 @@ mit einer finalen Zielarchitektur auf Basis von:
 - Jugendarbeit
 - Galerie
 - Kontakt
-- Admin-Grundgerüst
 - Impressum
 - Datenschutz
+- Admin-Grundgerüst
 
-## Lokale Entwicklung
+## Zielarchitektur
+
+- **Vercel** für Hosting und Deployments
+- **Neon / PostgreSQL** für News, Termine, Personen und Kalenderregeln
+- **Vercel Blob** für Bilder, PDFs und andere Dateien
+- **ICS-Import** für Termine mit Ausschlussregeln
+
+## Lokal starten
 
 ```bash
 npm install
@@ -29,53 +32,58 @@ npm run db:generate
 npm run dev
 ```
 
-Wenn bereits eine Neon-Datenbank verbunden ist:
+## Datenbank einrichten
+
+Nach dem Eintragen der echten `DATABASE_URL`:
 
 ```bash
 npm run db:push
 npm run db:seed
 ```
 
-## Umgebungsvariablen
+## ICS-Kalenderimport
 
-```env
-DATABASE_URL="postgresql://..."
-BLOB_READ_WRITE_TOKEN="vercel_blob_rw_..."
+Die Termine werden nicht direkt aus dem Frontend gelesen, sondern in Neon importiert.
+Dadurch können Regeln greifen, um bestimmte Einträge automatisch auszublenden.
+
+Umgebungsvariablen:
+
+```bash
+CALENDAR_ICS_URL="https://example.com/calendar.ics"
+CRON_SECRET="replace-with-a-random-secret"
 ```
 
-## Architektur
+Manueller Sync lokal oder in Produktion:
 
-### Neon / Postgres
-Strukturierte Daten liegen in Postgres:
+```text
+GET /api/cron/sync-calendar
+```
 
-- `NewsPost`
-- `Event`
-- `GalleryImage`
-- `Person`
+Mit gesetztem `CRON_SECRET` muss entweder der Header
+`Authorization: Bearer <secret>` oder `?secret=<secret>` verwendet werden.
 
-Die öffentlichen Seiten greifen bereits auf Neon zu. Falls lokal noch keine Datenbank
-konfiguriert ist, verwendet die App automatisch Fallback-Inhalte, damit das Projekt sofort startet.
+## Unterstützte Ausschlussregeln
 
-### Vercel Blob
-Dateien wie Bilder oder PDFs werden über den Upload-Endpunkt nach Blob geschrieben:
+- `UID_EQUALS`
+- `TITLE_CONTAINS`
+- `LOCATION_CONTAINS`
+- `CATEGORY_EQUALS`
 
-- `POST /api/upload`
+Beispiele:
 
-Die Admin-Seite unter `/admin` enthält bereits ein einfaches Upload-Interface.
+- alle internen Proben ausblenden
+- Termine mit bestimmtem Ort ausblenden
+- einen einzelnen ICS-Eintrag per UID unterdrücken
+- Kategorien wie `intern` oder `probe` ausblenden
 
-## Vercel-Setup
+## Vercel Cron
 
-1. Git-Repository nach GitHub pushen
-2. Projekt in Vercel importieren
-3. Neon-Integration mit dem Vercel-Projekt verbinden
-4. Blob Store im Vercel-Projekt anlegen
-5. Umgebungsvariablen in Vercel setzen
-6. Deploy auslösen
+In `vercel.json` ist ein Beispiel-Cron enthalten, der den Kalendersync alle 6 Stunden ausführt.
 
 ## Nächste sinnvolle Schritte
 
-- Login-Schutz für `/admin`
-- Formulare für News, Termine und Galerie
-- Rich-Text-Inhalte für Beiträge
-- echtes Titelbild und echte Galerie
-- optionale Kalender-Synchronisation
+- geschützten Admin-Zugang ergänzen
+- Formulare für Kalenderquellen und Ausschlussregeln bauen
+- Sync-Protokoll im Admin-Bereich anzeigen
+- manuelle Überschreibungen pro Termin ergänzen
+- Galerie und Downloads vollständig an Blob anbinden

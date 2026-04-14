@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum CalendarRuleKind {
+  UID_EQUALS
+  TITLE_CONTAINS
+  LOCATION_CONTAINS
+  CATEGORY_EQUALS
+}
+
 model NewsPost {
   id           String   @id @default(cuid())
   slug         String   @unique
@@ -20,17 +27,56 @@ model NewsPost {
   updatedAt    DateTime @updatedAt
 }
 
-model Event {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
+model CalendarSource {
+  id                String                  @id @default(cuid())
+  name              String
+  slug              String                  @unique
+  icsUrl            String
+  isActive          Boolean                 @default(true)
+  lastSyncedAt      DateTime?
+  lastSyncStatus    String?
+  lastSyncMessage   String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  exclusionRules    CalendarExclusionRule[]
+  events            Event[]
+}
+
+model CalendarExclusionRule {
+  id          String           @id @default(cuid())
+  sourceId    String
+  source      CalendarSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  kind        CalendarRuleKind
+  value       String
   description String?
-  location    String?
-  startsAt    DateTime
-  endsAt      DateTime?
-  isPublished Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([sourceId, isActive])
+}
+
+model Event {
+  id                String          @id @default(cuid())
+  slug              String          @unique
+  title             String
+  description       String?
+  location          String?
+  startsAt          DateTime
+  endsAt            DateTime?
+  isPublished       Boolean         @default(true)
+  isHidden          Boolean         @default(false)
+  sourceId          String?
+  source            CalendarSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  externalUid       String?         @unique
+  categories        String[]        @default([])
+  exclusionReason   String?
+  lastImportedAt    DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([startsAt, isPublished, isHidden])
+  @@index([sourceId, startsAt])
 }
 
 model GalleryImage {

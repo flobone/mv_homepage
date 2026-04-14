@@ -30,12 +30,36 @@ export async function getEvents(limit?: number) {
 
   try {
     return await prisma.event.findMany({
-      where: { isPublished: true },
+      where: {
+        isPublished: true,
+        isHidden: false,
+        startsAt: { gte: new Date() },
+      },
       orderBy: { startsAt: "asc" },
       take: limit,
     });
   } catch {
     return typeof limit === "number" ? fallbackEvents.slice(0, limit) : fallbackEvents;
+  }
+}
+
+export async function getCalendarSources() {
+  if (!dbEnabled()) {
+    return [];
+  }
+
+  try {
+    return await prisma.calendarSource.findMany({
+      include: {
+        exclusionRules: {
+          where: { isActive: true },
+          orderBy: [{ kind: "asc" }, { value: "asc" }],
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+  } catch {
+    return [];
   }
 }
 
