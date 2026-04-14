@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { syncCalendars } from "@/lib/calendar-sync";
 import { prisma } from "@/lib/prisma";
 
 type EventsFormState = {
@@ -84,7 +83,32 @@ export async function createExclusionRule(
 }
 
 export async function triggerCalendarSync(): Promise<void> {
-  await syncCalendars();
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+    process.env.VERCEL_URL;
+
+  if (!baseUrl) {
+    throw new Error("Keine Basis-URL für den Kalendersync konfiguriert.");
+  }
+
+  const normalizedBaseUrl = baseUrl.startsWith("http")
+    ? baseUrl
+    : `https://${baseUrl}`;
+
+  const response = await fetch(
+    `${normalizedBaseUrl}/api/cron/sync-calendar?secret=${process.env.CRON_SECRET ?? ""}`,
+    {
+      method: "GET",
+      cache: "no-store",
+    },
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Kalendersync fehlgeschlagen: ${text}`);
+  }
+
   revalidateEventPaths();
 }
 
