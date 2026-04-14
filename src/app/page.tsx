@@ -69,9 +69,12 @@ export default async function HomePage() {
         <div className="grid gap-4 md:grid-cols-3">
           {upcomingEvents.map((event) => (
             <article key={event.id} className="card p-6">
-              <p className="text-sm font-semibold text-[#7b1f3a]">{formatDate(event.startsAt)}</p>
-              <h3 className="mt-2 text-xl font-semibold text-slate-900">{event.overrideTitle ?? event.title}</h3>
-              <p className="mt-2 text-sm text-slate-600">{event.overrideLocation ?? event.location ?? "Ort folgt"}</p>
+              <Link href={`/termine/${event.slug}`} className="block">
+                <p className="text-sm font-semibold text-[#7b1f3a]">{formatDate(event.startsAt)}</p>
+                <h3 className="mt-2 text-xl font-semibold text-slate-900">{event.overrideTitle ?? event.title}</h3>
+                <p className="mt-2 text-sm text-slate-600">{event.overrideLocation ?? event.location ?? "Ort folgt"}</p>
+                <p className="mt-6 text-sm font-semibold text-[#1f4d7a]">Details ansehen →</p>
+              </Link>
             </article>
           ))}
         </div>

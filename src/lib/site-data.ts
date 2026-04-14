@@ -43,6 +43,30 @@ export async function getNewsPostBySlug(slug: string): Promise<NewsPost | null> 
   }
 }
 
+
+
+export async function getEventBySlug(slug: string): Promise<Event | null> {
+  if (!dbEnabled()) {
+    return (
+      fallbackEvents.find((item) => item.slug === slug && item.isPublished && !item.isHidden) ?? null
+    );
+  }
+
+  try {
+    return await prisma.event.findFirst({
+      where: {
+        slug,
+        isPublished: true,
+        isHidden: false,
+      },
+    });
+  } catch {
+    return (
+      fallbackEvents.find((item) => item.slug === slug && item.isPublished && !item.isHidden) ?? null
+    );
+  }
+}
+
 export async function getEvents(limit?: number): Promise<Event[]> {
   if (!dbEnabled()) {
     return typeof limit === "number" ? fallbackEvents.slice(0, limit) : fallbackEvents;
