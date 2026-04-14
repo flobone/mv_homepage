@@ -25,6 +25,24 @@ export async function getNewsPosts(limit?: number): Promise<NewsPost[]> {
   }
 }
 
+
+export async function getNewsPostBySlug(slug: string): Promise<NewsPost | null> {
+  if (!dbEnabled()) {
+    return fallbackNews.find((item) => item.slug === slug && item.isPublished) ?? null;
+  }
+
+  try {
+    return await prisma.newsPost.findFirst({
+      where: {
+        slug,
+        isPublished: true,
+      },
+    });
+  } catch {
+    return fallbackNews.find((item) => item.slug === slug && item.isPublished) ?? null;
+  }
+}
+
 export async function getEvents(limit?: number): Promise<Event[]> {
   if (!dbEnabled()) {
     return typeof limit === "number" ? fallbackEvents.slice(0, limit) : fallbackEvents;

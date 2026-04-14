@@ -52,11 +52,14 @@ export default async function HomePage() {
         <div className="grid gap-4 md:grid-cols-3">
           {newsItems.map((item) => (
             <article key={item.id} className="card p-6">
-              <p className="text-sm font-semibold text-[#7b1f3a]">{formatDate(item.publishedAt)}</p>
-              <h3 className="mt-2 text-xl font-semibold text-slate-900">{item.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                {item.excerpt ?? item.content ?? ""}
-              </p>
+              <Link href={`/aktuelles/${item.slug}`} className="block">
+                <p className="text-sm font-semibold text-[#7b1f3a]">{formatDate(item.publishedAt)}</p>
+                <h3 className="mt-2 text-xl font-semibold text-slate-900">{item.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  {item.excerpt ?? item.content ?? ""}
+                </p>
+                <p className="mt-6 text-sm font-semibold text-[#1f4d7a]">Beitrag lesen →</p>
+              </Link>
             </article>
           ))}
         </div>
