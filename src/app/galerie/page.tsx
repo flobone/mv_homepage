@@ -9,11 +9,11 @@ export default async function GalleryPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {images.map((image) => (
           <div key={image.id} className="card p-4">
-            {image.blobUrl ? (
+            {image.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={image.blobUrl}
-                alt={image.altText ?? image.title}
+                src={image.imageUrl}
+                alt={image.altText ?? image.title ?? undefined}
                 className="aspect-[4/3] w-full rounded-2xl object-cover"
               />
             ) : (

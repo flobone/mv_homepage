@@ -1,14 +1,12 @@
 import "server-only";
 
-import ical from "node-ical";
-
 import { prisma } from "@/lib/prisma";
 
 type RuleKind = "UID_EQUALS" | "TITLE_CONTAINS" | "LOCATION_CONTAINS" | "CATEGORY_EQUALS";
 
 type CalendarRule = {
   id: string;
-  kind: RuleKind;
+  ruleType: RuleKind;
   value: string;
   description: string | null;
 };
@@ -32,11 +30,22 @@ type SyncSourceResult = {
   skippedInvalidDates: number;
 };
 
-type SyncResult = {
+export type SyncResult = {
   ok: boolean;
   startedAt: string;
   finishedAt: string;
   sources: SyncSourceResult[];
+};
+
+type RawIcalEvent = {
+  type?: string;
+  uid?: unknown;
+  start?: unknown;
+  end?: unknown;
+  summary?: unknown;
+  description?: unknown;
+  location?: unknown;
+  categories?: unknown;
 };
 
 function slugify(value: string): string {
@@ -65,20 +74,24 @@ function extractCategories(rawCategories: unknown): string[] {
       .filter(Boolean);
   }
 
-  if (typeof rawCategories === "object" && rawCategories !== null && "val" in rawCategories) {
+  if (
+    typeof rawCategories === "object" &&
+    rawCategories !== null &&
+    "val" in rawCategories
+  ) {
     return extractCategories((rawCategories as { val: unknown }).val);
   }
 
   return [];
 }
 
-function normalizeEvent(rawEvent: any): ParsedCalendarEvent | null {
-  if (!rawEvent?.uid || !rawEvent?.start || !rawEvent?.summary) {
+function normalizeEvent(rawEvent: RawIcalEvent): ParsedCalendarEvent | null {
+  if (!rawEvent.uid || !rawEvent.start || !rawEvent.summary) {
     return null;
   }
 
-  const startsAt = new Date(rawEvent.start);
-  const endsAt = rawEvent.end ? new Date(rawEvent.end) : null;
+  const startsAt = new Date(rawEvent.start as string | number | Date);
+  const endsAt = rawEvent.end ? new Date(rawEvent.end as string | number | Date) : null;
 
   if (Number.isNaN(startsAt.getTime())) {
     return null;
@@ -101,23 +114,23 @@ function checkRule(event: ParsedCalendarEvent, rule: CalendarRule): string | nul
     return null;
   }
 
-  if (rule.kind === "UID_EQUALS" && event.uid.toLowerCase() === needle) {
+  if (rule.ruleType === "UID_EQUALS" && event.uid.toLowerCase() === needle) {
     return rule.description ?? `UID ausgeschlossen: ${rule.value}`;
   }
 
-  if (rule.kind === "TITLE_CONTAINS" && event.title.toLowerCase().includes(needle)) {
+  if (rule.ruleType === "TITLE_CONTAINS" && event.title.toLowerCase().includes(needle)) {
     return rule.description ?? `Titel ausgeschlossen: ${rule.value}`;
   }
 
   if (
-    rule.kind === "LOCATION_CONTAINS" &&
+    rule.ruleType === "LOCATION_CONTAINS" &&
     (event.location ?? "").toLowerCase().includes(needle)
   ) {
     return rule.description ?? `Ort ausgeschlossen: ${rule.value}`;
   }
 
   if (
-    rule.kind === "CATEGORY_EQUALS" &&
+    rule.ruleType === "CATEGORY_EQUALS" &&
     event.categories.some((category) => category.toLowerCase() === needle)
   ) {
     return rule.description ?? `Kategorie ausgeschlossen: ${rule.value}`;
@@ -126,7 +139,10 @@ function checkRule(event: ParsedCalendarEvent, rule: CalendarRule): string | nul
   return null;
 }
 
-function findExclusionReason(event: ParsedCalendarEvent, rules: CalendarRule[]): string | null {
+function findExclusionReason(
+  event: ParsedCalendarEvent,
+  rules: CalendarRule[],
+): string | null {
   for (const rule of rules) {
     const match = checkRule(event, rule);
     if (match) {
@@ -137,14 +153,16 @@ function findExclusionReason(event: ParsedCalendarEvent, rules: CalendarRule[]):
 }
 
 export async function syncCalendars(): Promise<SyncResult> {
+  const ical = await import("node-ical");
+  
   const startedAt = new Date();
 
   const sources = await prisma.calendarSource.findMany({
     where: { isActive: true },
     include: {
-      exclusionRules: {
+      rules: {
         where: { isActive: true },
-        orderBy: [{ kind: "asc" }, { value: "asc" }],
+        orderBy: { value: "asc" },
       },
     },
     orderBy: { name: "asc" },
@@ -170,13 +188,20 @@ export async function syncCalendars(): Promise<SyncResult> {
 
       const calendarText = await response.text();
       const parsed = ical.sync.parseICS(calendarText);
-      const rawEvents = Object.values(parsed).filter((entry: any) => entry?.type === "VEVENT");
+      const rawEvents = Object.values(parsed).filter((entry) => {
+        return (
+          typeof entry === "object" &&
+          entry !== null &&
+          "type" in entry &&
+          entry.type === "VEVENT"
+        );
+      });
       const seenUids = new Set<string>();
 
       for (const rawEvent of rawEvents) {
-        const event = normalizeEvent(rawEvent);
+        const event = normalizeEvent(rawEvent as RawIcalEvent);
 
-        if (!event?.uid) {
+        if (!rawEvent.uid) {
           skippedWithoutUid += 1;
           continue;
         }
@@ -191,13 +216,14 @@ export async function syncCalendars(): Promise<SyncResult> {
         }
         seenUids.add(event.uid);
 
-        const exclusionReason = findExclusionReason(event, source.exclusionRules as CalendarRule[]);
+        const exclusionReason = findExclusionReason(event, source.rules);
         const slugBase = `${slugify(event.title)}-${event.startsAt.toISOString().slice(0, 10)}`;
+        const slug = slugBase || slugify(event.uid);
 
         await prisma.event.upsert({
           where: { externalUid: event.uid },
           update: {
-            slug: slugBase || slugify(event.uid),
+            slug,
             title: event.title,
             description: event.description,
             location: event.location,
@@ -205,13 +231,13 @@ export async function syncCalendars(): Promise<SyncResult> {
             endsAt: event.endsAt,
             categories: event.categories,
             isPublished: true,
-            isHidden: Boolean(exclusionReason),
+            isHidden: exclusionReason !== null,
             exclusionReason,
             sourceId: source.id,
             lastImportedAt: new Date(),
           },
           create: {
-            slug: slugBase || slugify(event.uid),
+            slug,
             externalUid: event.uid,
             title: event.title,
             description: event.description,
@@ -220,7 +246,7 @@ export async function syncCalendars(): Promise<SyncResult> {
             endsAt: event.endsAt,
             categories: event.categories,
             isPublished: true,
-            isHidden: Boolean(exclusionReason),
+            isHidden: exclusionReason !== null,
             exclusionReason,
             sourceId: source.id,
             lastImportedAt: new Date(),

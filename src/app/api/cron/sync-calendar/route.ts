@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { syncCalendars } from "@/lib/calendar-sync";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
@@ -23,13 +24,18 @@ export async function GET(request: Request) {
   }
 
   try {
+    const { syncCalendars } = await import("@/lib/calendar-sync");
     const result = await syncCalendars();
+
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(
       {
         ok: false,
-        error: error instanceof Error ? error.message : "Unbekannter Fehler beim Kalendersync.",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unbekannter Fehler beim Kalendersync.",
       },
       { status: 500 },
     );

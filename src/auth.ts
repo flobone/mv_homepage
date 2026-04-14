@@ -18,14 +18,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as { role?: string }).role ?? "EDITOR";
+        token.role = (user as { role?: "ADMIN" | "EDITOR" }).role ?? "EDITOR";
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub ?? "";
-        session.user.role = typeof token.role === "string" ? token.role : "EDITOR";
+        session.user.role = token.role === "ADMIN" || token.role === "EDITOR"
+          ? token.role
+          : "EDITOR";
       }
       return session;
     },

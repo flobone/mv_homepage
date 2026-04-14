@@ -1,4 +1,6 @@
-export const fallbackNews = [
+import type { NewsPost, Event, GalleryImage} from "@prisma/client";
+
+export const fallbackNews: NewsPost[] = [
   {
     id: "news-1",
     slug: "kuerbisfest-auf-dem-irlenhof",
@@ -8,7 +10,10 @@ export const fallbackNews = [
     content:
       "Zum zweiten Mal durfte der Musikverein in diesem Jahr das Kürbisfest auf dem Irlenhof in Ferndorf begleiten. Es war eine stimmungsvolle Veranstaltung mit vielen Besucherinnen und Besuchern.",
     publishedAt: new Date("2023-10-21T12:00:00Z"),
+    isPublished: true,
     coverImage: null,
+    createdAt: new Date("2023-10-21"),
+    updatedAt: new Date("2023-10-21"),
   },
   {
     id: "news-2",
@@ -19,7 +24,10 @@ export const fallbackNews = [
     content:
       "Beim traditionellen Frühschoppen gab es neben Bier, Würstchen und Pizza ein buntes Programm aus klassischer und moderner Blasmusik.",
     publishedAt: new Date("2023-05-08T12:00:00Z"),
+    isPublished: true,
     coverImage: null,
+    createdAt: new Date("2023-10-21"),
+    updatedAt: new Date("2023-10-21"),
   },
   {
     id: "news-3",
@@ -30,11 +38,14 @@ export const fallbackNews = [
     content:
       "Das Frühlingskonzert fand in der Aula der Carl-Krämer-Realschule statt und bot ein abwechslungsreiches Programm mit Beiträgen aller Jugendgruppen.",
     publishedAt: new Date("2023-05-08T16:00:00Z"),
+    isPublished: true,
     coverImage: null,
+    createdAt: new Date("2023-10-21"),
+    updatedAt: new Date("2023-10-21"),
   },
 ];
 
-export const fallbackEvents = [
+export const fallbackEvents: Event[] = [
   {
     id: "event-1",
     slug: "fruehlingskonzert-2027",
@@ -43,8 +54,15 @@ export const fallbackEvents = [
     location: "Hilchenbach",
     startsAt: new Date("2027-03-20T19:00:00+01:00"),
     endsAt: new Date("2027-03-20T22:00:00+01:00"),
+    isPublished: true,
     isHidden: false,
+    externalUid: null,
+    categories: [],
     exclusionReason: null,
+    sourceId: null,
+    lastImportedAt: null,
+    createdAt: new Date("2027-01-01T00:00:00+01:00"),
+    updatedAt: new Date("2027-01-01T00:00:00+01:00"),
   },
   {
     id: "event-2",
@@ -54,8 +72,15 @@ export const fallbackEvents = [
     location: "Müsen",
     startsAt: new Date("2026-04-30T18:00:00+02:00"),
     endsAt: new Date("2026-04-30T20:00:00+02:00"),
+    isPublished: true,
     isHidden: false,
+    externalUid: null,
+    categories: [],
     exclusionReason: null,
+    sourceId: null,
+    lastImportedAt: null,
+    createdAt: new Date("2026-01-01T00:00:00+01:00"),
+    updatedAt: new Date("2026-01-01T00:00:00+01:00"),
   },
   {
     id: "event-3",
@@ -65,31 +90,50 @@ export const fallbackEvents = [
     location: "Müsen",
     startsAt: new Date("2026-05-01T11:00:00+02:00"),
     endsAt: new Date("2026-05-01T16:00:00+02:00"),
+    isPublished: true,
     isHidden: false,
+    externalUid: null,
+    categories: [],
     exclusionReason: null,
+    sourceId: null,
+    lastImportedAt: null,
+    createdAt: new Date("2026-01-01T00:00:00+01:00"),
+    updatedAt: new Date("2026-01-01T00:00:00+01:00"),
   },
 ];
 
-export const fallbackGalleryImages = [
-  {
+export const fallbackGalleryImages: GalleryImage[] = [
+   {
     id: "gallery-1",
     title: "Konzert",
-    blobUrl: "",
+    slug: "konzert",
+    imageUrl: "",
     altText: "Konzert",
-    album: "Vereinsleben",
+    caption: "Vereinsleben",
+    isPublished: true,
+    createdAt: new Date("2026-01-01T00:00:00+01:00"),
+    updatedAt: new Date("2026-01-01T00:00:00+01:00"),
   },
   {
     id: "gallery-2",
     title: "Frühschoppen",
-    blobUrl: "",
+    slug: "fruehschoppen",
+    imageUrl: "",
     altText: "Frühschoppen",
-    album: "Vereinsleben",
+    caption: "Vereinsleben",
+    isPublished: true,
+    createdAt: new Date("2026-01-01T00:00:00+01:00"),
+    updatedAt: new Date("2026-01-01T00:00:00+01:00"),
   },
   {
     id: "gallery-3",
     title: "Jugendorchester",
-    blobUrl: "",
+    slug: "jugendorchester",
+    imageUrl: "",
     altText: "Jugendorchester",
-    album: "Jugend",
+    caption: "Jugend",
+    isPublished: true,
+    createdAt: new Date("2026-01-01T00:00:00+01:00"),
+    updatedAt: new Date("2026-01-01T00:00:00+01:00"),
   },
 ];

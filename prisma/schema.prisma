@@ -12,6 +12,13 @@ enum UserRole {
   EDITOR
 }
 
+enum RuleType {
+  UID_EQUALS
+  TITLE_CONTAINS
+  LOCATION_CONTAINS
+  CATEGORY_EQUALS
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String?
@@ -21,4 +28,93 @@ model User {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model NewsPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String?
+  content     String?
+  coverImage  String?
+  isPublished Boolean  @default(false)
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Event {
+  id              String          @id @default(cuid())
+  title           String
+  slug            String?         @unique
+  description     String?
+  location        String?
+  startsAt        DateTime
+  endsAt          DateTime?
+  isPublished     Boolean         @default(true)
+  isHidden        Boolean         @default(false)
+  externalUid     String?         @unique
+  categories      String[]        @default([])
+  exclusionReason String?
+  lastImportedAt  DateTime?
+  sourceId        String?
+  source          CalendarSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([startsAt])
+}
+
+model GalleryImage {
+  id          String   @id @default(cuid())
+  title       String?
+  slug        String?  @unique
+  imageUrl    String
+  altText     String?
+  caption     String?
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Person {
+  id          String   @id @default(cuid())
+  name        String
+  role        String?
+  email       String?
+  phone       String?
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CalendarSource {
+  id              String                  @id @default(cuid())
+  name            String
+  icsUrl          String
+  isActive        Boolean                 @default(true)
+  lastSyncedAt    DateTime?
+  lastSyncStatus  String?
+  lastSyncMessage String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  events Event[]
+  rules  CalendarExclusionRule[]
+}
+
+model CalendarExclusionRule {
+  id          String         @id @default(cuid())
+  sourceId    String
+  source      CalendarSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  ruleType    RuleType
+  value       String
+  description String?
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([sourceId, ruleType, isActive])
 }

@@ -2,6 +2,7 @@ import { Section } from "@/components/Section";
 import { formatDate } from "@/lib/format";
 import { getNewsPosts } from "@/lib/site-data";
 
+
 export default async function NewsPage() {
   const news = await getNewsPosts();
 

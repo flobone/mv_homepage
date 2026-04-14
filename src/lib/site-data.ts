@@ -2,12 +2,14 @@ import "server-only";
 
 import { fallbackEvents, fallbackGalleryImages, fallbackNews } from "@/lib/fallback-content";
 import { prisma } from "@/lib/prisma";
+import { NewsPost, GalleryImage, Person, Event } from "@prisma/client";
+
 
 function dbEnabled(): boolean {
   return Boolean(process.env.DATABASE_URL);
 }
 
-export async function getNewsPosts(limit?: number) {
+export async function getNewsPosts(limit?: number): Promise<NewsPost[]> {
   if (!dbEnabled()) {
     return typeof limit === "number" ? fallbackNews.slice(0, limit) : fallbackNews;
   }
@@ -23,7 +25,7 @@ export async function getNewsPosts(limit?: number) {
   }
 }
 
-export async function getEvents(limit?: number) {
+export async function getEvents(limit?: number): Promise<Event[]> {
   if (!dbEnabled()) {
     return typeof limit === "number" ? fallbackEvents.slice(0, limit) : fallbackEvents;
   }
@@ -51,9 +53,9 @@ export async function getCalendarSources() {
   try {
     return await prisma.calendarSource.findMany({
       include: {
-        exclusionRules: {
-          where: { isActive: true },
-          orderBy: [{ kind: "asc" }, { value: "asc" }],
+        rules: {
+          where: {isActive: true },
+          orderBy: [{value: "asc" }],
         },
       },
       orderBy: { name: "asc" },
@@ -63,7 +65,7 @@ export async function getCalendarSources() {
   }
 }
 
-export async function getPublicContacts() {
+export async function getPublicContacts(): Promise<Person[]> {
   if (!dbEnabled()) {
     return [
       {
@@ -72,13 +74,18 @@ export async function getPublicContacts() {
         role: "Allgemeine Anfragen",
         email: "info@musikverein-muesen.de",
         phone: null,
+        imageUrl: null,
+        sortOrder: 0,
+        isPublished: true,
+        createdAt: new Date("2023-10-21T12:00:00Z"),
+        updatedAt: new Date("2023-10-21T12:00:00Z")
       },
     ];
   }
 
   try {
     return await prisma.person.findMany({
-      where: { isPublic: true },
+      where: { isPublished: true },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     });
   } catch {
@@ -89,12 +96,17 @@ export async function getPublicContacts() {
         role: "Allgemeine Anfragen",
         email: "info@musikverein-muesen.de",
         phone: null,
+        imageUrl: null,
+        sortOrder: 0,
+        isPublished: true,
+        createdAt: new Date("2023-10-21T12:00:00Z"),
+        updatedAt: new Date("2023-10-21T12:00:00Z")
       },
     ];
   }
 }
 
-export async function getGalleryImages(limit?: number) {
+export async function getGalleryImages(limit?: number): Promise<GalleryImage[]>{
   if (!dbEnabled()) {
     return typeof limit === "number" ? fallbackGalleryImages.slice(0, limit) : fallbackGalleryImages;
   }
