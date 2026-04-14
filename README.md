@@ -47,3 +47,9 @@ npm run db:seed-admin
 - ICS-Kalender-Sync hinter den Admin hängen
 - Vercel Blob Uploads für Galerie ergänzen
 - Rollenmodell erweitern
+
+
+## Allgemeine Seitenverwaltung
+
+Im Adminbereich können redaktionelle Seiten jetzt zentral unter `/admin/pages` gepflegt werden.
+Aktuell sind `vereinschronik`, `ueber-uns` und `jugendarbeit` freigeschaltet.

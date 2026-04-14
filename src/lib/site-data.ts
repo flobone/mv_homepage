@@ -1,12 +1,34 @@
 import "server-only";
 
-import { fallbackEvents, fallbackGalleryImages, fallbackNews } from "@/lib/fallback-content";
+import {
+  fallbackChronikPage,
+  fallbackEvents,
+  fallbackGalleryImages,
+  fallbackNews,
+  fallbackSitePages,
+} from "@/lib/fallback-content";
 import { prisma } from "@/lib/prisma";
-import { NewsPost, GalleryImage, Person, Event } from "@prisma/client";
-
+import { getManagedPageDefinition, managedPages } from "@/lib/page-config";
+import type { Event, GalleryImage, NewsPost, Person, SitePage } from "@prisma/client";
 
 function dbEnabled(): boolean {
   return Boolean(process.env.DATABASE_URL);
+}
+
+function getFallbackSitePage(slug: string): SitePage | null {
+  const fallback = fallbackSitePages.find((page) => page.slug === slug);
+  if (!fallback) {
+    return null;
+  }
+
+  return {
+    id: `page-${fallback.slug}`,
+    slug: fallback.slug,
+    title: fallback.title,
+    contentHtml: fallback.contentHtml,
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+    updatedAt: new Date("2026-01-01T00:00:00Z"),
+  };
 }
 
 export async function getNewsPosts(limit?: number): Promise<NewsPost[]> {
@@ -25,7 +47,6 @@ export async function getNewsPosts(limit?: number): Promise<NewsPost[]> {
   }
 }
 
-
 export async function getNewsPostBySlug(slug: string): Promise<NewsPost | null> {
   if (!dbEnabled()) {
     return fallbackNews.find((item) => item.slug === slug && item.isPublished) ?? null;
@@ -42,8 +63,6 @@ export async function getNewsPostBySlug(slug: string): Promise<NewsPost | null> 
     return fallbackNews.find((item) => item.slug === slug && item.isPublished) ?? null;
   }
 }
-
-
 
 export async function getEventBySlug(slug: string): Promise<Event | null> {
   if (!dbEnabled()) {
@@ -96,8 +115,8 @@ export async function getCalendarSources() {
     return await prisma.calendarSource.findMany({
       include: {
         rules: {
-          where: {isActive: true },
-          orderBy: [{value: "asc" }],
+          where: { isActive: true },
+          orderBy: [{ value: "asc" }],
         },
       },
       orderBy: { name: "asc" },
@@ -108,21 +127,23 @@ export async function getCalendarSources() {
 }
 
 export async function getPublicContacts(): Promise<Person[]> {
+  const fallbackContacts: Person[] = [
+    {
+      id: "contact-1",
+      name: "Musikverein Müsen",
+      role: "Allgemeine Anfragen",
+      email: "info@musikverein-muesen.de",
+      phone: null,
+      imageUrl: null,
+      sortOrder: 0,
+      isPublished: true,
+      createdAt: new Date("2023-10-21T12:00:00Z"),
+      updatedAt: new Date("2023-10-21T12:00:00Z"),
+    },
+  ];
+
   if (!dbEnabled()) {
-    return [
-      {
-        id: "contact-1",
-        name: "Musikverein Müsen",
-        role: "Allgemeine Anfragen",
-        email: "info@musikverein-muesen.de",
-        phone: null,
-        imageUrl: null,
-        sortOrder: 0,
-        isPublished: true,
-        createdAt: new Date("2023-10-21T12:00:00Z"),
-        updatedAt: new Date("2023-10-21T12:00:00Z")
-      },
-    ];
+    return fallbackContacts;
   }
 
   try {
@@ -131,26 +152,15 @@ export async function getPublicContacts(): Promise<Person[]> {
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     });
   } catch {
-    return [
-      {
-        id: "contact-1",
-        name: "Musikverein Müsen",
-        role: "Allgemeine Anfragen",
-        email: "info@musikverein-muesen.de",
-        phone: null,
-        imageUrl: null,
-        sortOrder: 0,
-        isPublished: true,
-        createdAt: new Date("2023-10-21T12:00:00Z"),
-        updatedAt: new Date("2023-10-21T12:00:00Z")
-      },
-    ];
+    return fallbackContacts;
   }
 }
 
-export async function getGalleryImages(limit?: number): Promise<GalleryImage[]>{
+export async function getGalleryImages(limit?: number): Promise<GalleryImage[]> {
   if (!dbEnabled()) {
-    return typeof limit === "number" ? fallbackGalleryImages.slice(0, limit) : fallbackGalleryImages;
+    return typeof limit === "number"
+      ? fallbackGalleryImages.slice(0, limit)
+      : fallbackGalleryImages;
   }
 
   try {
@@ -160,6 +170,55 @@ export async function getGalleryImages(limit?: number): Promise<GalleryImage[]>{
       take: limit,
     });
   } catch {
-    return typeof limit === "number" ? fallbackGalleryImages.slice(0, limit) : fallbackGalleryImages;
+    return typeof limit === "number"
+      ? fallbackGalleryImages.slice(0, limit)
+      : fallbackGalleryImages;
   }
+}
+
+export async function getSitePageBySlug(slug: string): Promise<SitePage | null> {
+  if (!dbEnabled()) {
+    return getFallbackSitePage(slug);
+  }
+
+  try {
+    const page = await prisma.sitePage.findUnique({
+      where: { slug },
+    });
+
+    if (page) {
+      return page;
+    }
+  } catch {
+    // fall through to fallback
+  }
+
+  return getFallbackSitePage(slug);
+}
+
+export async function getManagedSitePages(): Promise<
+  Array<{
+    slug: string;
+    adminTitle: string;
+    publicTitle: string;
+    publicPath: string;
+    summary: string;
+    timelineMode?: boolean;
+    page: SitePage | null;
+  }>
+> {
+  const pages = await Promise.all(
+    managedPages.map(async (definition) => ({
+      ...definition,
+      page: await getSitePageBySlug(definition.slug),
+    })),
+  );
+
+  return pages;
+}
+
+export { fallbackChronikPage };
+
+export function getManagedPagePublicPath(slug: string): string | null {
+  return getManagedPageDefinition(slug)?.publicPath ?? null;
 }

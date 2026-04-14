@@ -51,6 +51,9 @@ export default async function AdminLayout({
             <Link className="rounded-xl px-3 py-2 hover:bg-slate-50" href="/admin/gallery">
               Galerie
             </Link>
+            <Link className="rounded-xl px-3 py-2 hover:bg-slate-50" href="/admin/pages">
+              Seiten
+            </Link>
             <Link className="rounded-xl px-3 py-2 hover:bg-slate-50" href="/admin/settings">
               Einstellungen
             </Link>
