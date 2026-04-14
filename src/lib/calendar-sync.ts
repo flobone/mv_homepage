@@ -1,8 +1,14 @@
 import "server-only";
 
+import ICAL from "ical.js";
+
 import { prisma } from "@/lib/prisma";
 
-type RuleKind = "UID_EQUALS" | "TITLE_CONTAINS" | "LOCATION_CONTAINS" | "CATEGORY_EQUALS";
+type RuleKind =
+  | "UID_EQUALS"
+  | "TITLE_CONTAINS"
+  | "LOCATION_CONTAINS"
+  | "CATEGORY_EQUALS";
 
 type CalendarRule = {
   id: string;
@@ -37,17 +43,6 @@ export type SyncResult = {
   sources: SyncSourceResult[];
 };
 
-type RawIcalEvent = {
-  type?: string;
-  uid?: unknown;
-  start?: unknown;
-  end?: unknown;
-  summary?: unknown;
-  description?: unknown;
-  location?: unknown;
-  categories?: unknown;
-};
-
 function slugify(value: string): string {
   return value
     .normalize("NFKD")
@@ -58,57 +53,56 @@ function slugify(value: string): string {
     .slice(0, 80);
 }
 
-function extractCategories(rawCategories: unknown): string[] {
-  if (!rawCategories) {
-    return [];
-  }
-
-  if (Array.isArray(rawCategories)) {
-    return rawCategories.flatMap((entry) => extractCategories(entry));
-  }
-
-  if (typeof rawCategories === "string") {
-    return rawCategories
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-  }
-
-  if (
-    typeof rawCategories === "object" &&
-    rawCategories !== null &&
-    "val" in rawCategories
-  ) {
-    return extractCategories((rawCategories as { val: unknown }).val);
-  }
-
-  return [];
+function normalizeText(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
 }
 
-function normalizeEvent(rawEvent: RawIcalEvent): ParsedCalendarEvent | null {
-  if (!rawEvent.uid || !rawEvent.start || !rawEvent.summary) {
+function extractCategoriesFromProperty(
+  component: ICAL.Component,
+): string[] {
+  const props = component.getAllProperties("categories");
+  const values = props.flatMap((prop) => {
+    const value = prop.getValues();
+    return value.map((entry) => String(entry).trim()).filter(Boolean);
+  });
+
+  return [...new Set(values)];
+}
+
+function normalizeEvent(vevent: ICAL.Component): ParsedCalendarEvent | null {
+  const event = new ICAL.Event(vevent);
+
+  const uid = normalizeText(event.uid);
+  const title = normalizeText(event.summary);
+  const startDate = event.startDate;
+
+  if (!uid || !title || !startDate) {
     return null;
   }
 
-  const startsAt = new Date(rawEvent.start as string | number | Date);
-  const endsAt = rawEvent.end ? new Date(rawEvent.end as string | number | Date) : null;
-
+  const startsAt = startDate.toJSDate();
   if (Number.isNaN(startsAt.getTime())) {
     return null;
   }
 
+  const endDate = event.endDate ? event.endDate.toJSDate() : null;
+
   return {
-    uid: String(rawEvent.uid),
-    title: String(rawEvent.summary),
-    description: rawEvent.description ? String(rawEvent.description) : null,
-    location: rawEvent.location ? String(rawEvent.location) : null,
+    uid,
+    title,
+    description: normalizeText(event.description),
+    location: normalizeText(event.location),
     startsAt,
-    endsAt: endsAt && !Number.isNaN(endsAt.getTime()) ? endsAt : null,
-    categories: extractCategories(rawEvent.categories),
+    endsAt: endDate && !Number.isNaN(endDate.getTime()) ? endDate : null,
+    categories: extractCategoriesFromProperty(vevent),
   };
 }
 
-function checkRule(event: ParsedCalendarEvent, rule: CalendarRule): string | null {
+function checkRule(
+  event: ParsedCalendarEvent,
+  rule: CalendarRule,
+): string | null {
   const needle = rule.value.trim().toLowerCase();
   if (!needle) {
     return null;
@@ -118,7 +112,10 @@ function checkRule(event: ParsedCalendarEvent, rule: CalendarRule): string | nul
     return rule.description ?? `UID ausgeschlossen: ${rule.value}`;
   }
 
-  if (rule.ruleType === "TITLE_CONTAINS" && event.title.toLowerCase().includes(needle)) {
+  if (
+    rule.ruleType === "TITLE_CONTAINS" &&
+    event.title.toLowerCase().includes(needle)
+  ) {
     return rule.description ?? `Titel ausgeschlossen: ${rule.value}`;
   }
 
@@ -153,8 +150,6 @@ function findExclusionReason(
 }
 
 export async function syncCalendars(): Promise<SyncResult> {
-  const ical = await import("node-ical");
-  
   const startedAt = new Date();
 
   const sources = await prisma.calendarSource.findMany({
@@ -187,21 +182,15 @@ export async function syncCalendars(): Promise<SyncResult> {
       }
 
       const calendarText = await response.text();
-      const parsed = ical.sync.parseICS(calendarText);
-      const rawEvents = Object.values(parsed).filter((entry) => {
-        return (
-          typeof entry === "object" &&
-          entry !== null &&
-          "type" in entry &&
-          entry.type === "VEVENT"
-        );
-      });
+      const jcalData = ICAL.parse(calendarText);
+      const vcalendar = new ICAL.Component(jcalData);
+      const vevents = vcalendar.getAllSubcomponents("vevent");
       const seenUids = new Set<string>();
 
-      for (const rawEvent of rawEvents) {
-        const event = normalizeEvent(rawEvent as RawIcalEvent);
+      for (const vevent of vevents) {
+        const event = normalizeEvent(vevent);
 
-        if (!rawEvent.uid) {
+        if (!event?.uid) {
           skippedWithoutUid += 1;
           continue;
         }
@@ -217,7 +206,9 @@ export async function syncCalendars(): Promise<SyncResult> {
         seenUids.add(event.uid);
 
         const exclusionReason = findExclusionReason(event, source.rules);
-        const slugBase = `${slugify(event.title)}-${event.startsAt.toISOString().slice(0, 10)}`;
+        const slugBase = `${slugify(event.title)}-${event.startsAt
+          .toISOString()
+          .slice(0, 10)}`;
         const slug = slugBase || slugify(event.uid);
 
         await prisma.event.upsert({
@@ -274,7 +265,8 @@ export async function syncCalendars(): Promise<SyncResult> {
         data: {
           lastSyncedAt: new Date(),
           lastSyncStatus: "error",
-          lastSyncMessage: error instanceof Error ? error.message : "Unbekannter Fehler",
+          lastSyncMessage:
+            error instanceof Error ? error.message : "Unbekannter Fehler",
         },
       });
     }
