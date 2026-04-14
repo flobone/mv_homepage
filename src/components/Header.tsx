@@ -8,7 +8,6 @@ const links = [
   { href: "/jugendarbeit", label: "Jugendarbeit" },
   { href: "/galerie", label: "Galerie" },
   { href: "/kontakt", label: "Kontakt" },
-  { href: "/admin", label: "Admin" },
 ];
 
 export function Header() {
@@ -19,7 +18,7 @@ export function Header() {
           Musikverein Müsen 1919 e.V.
         </Link>
 
-        <nav className="hidden gap-5 xl:flex">
+        <nav className="hidden gap-5 lg:flex">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -31,9 +30,14 @@ export function Header() {
           ))}
         </nav>
 
-        <Link href="/kontakt" className="button-primary">
-          Kontakt
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/kontakt" className="button-secondary">
+            Kontakt
+          </Link>
+          <Link href="/login" className="button-primary">
+            Admin
+          </Link>
+        </div>
       </div>
     </header>
   );
