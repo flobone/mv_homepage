@@ -5,8 +5,8 @@ export default function ImprintPage() {
     <Section eyebrow="Impressum" title="Rechtliche Angaben">
       <div className="card p-8">
         <p className="section-text">
-          Diese Seite ist ein Platzhalter. Trage hier später die vollständigen rechtlichen Angaben
-          des Vereins ein.
+          Diese Seite ist ein Platzhalter für das Impressum des Musikverein Müsen 1919 e.V.
+          Vor dem Livegang sollten hier die vollständigen rechtlichen Angaben ergänzt werden.
         </p>
       </div>
     </Section>
