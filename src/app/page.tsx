@@ -1,40 +1,11 @@
 import Link from "next/link";
 import { Section } from "@/components/Section";
+import { formatDate } from "@/lib/format";
+import { getEvents, getNewsPosts } from "@/lib/site-data";
 
-const upcomingEvents = [
-  {
-    date: "05. Oktober 2025",
-    title: "Kürbisfest auf dem Irlenhof",
-    place: "Ferndorf",
-  },
-  {
-    date: "14. Dezember 2025",
-    title: "Adventsnachmittag der Jugend",
-    place: "Müsen",
-  },
-  {
-    date: "21. Dezember 2025",
-    title: "Adventskonzert Neurologische Klinik",
-    place: "Hilchenbach",
-  },
-];
+export default async function HomePage() {
+  const [newsItems, upcomingEvents] = await Promise.all([getNewsPosts(3), getEvents(3)]);
 
-const newsItems = [
-  {
-    title: "Kürbisfest auf dem Irlenhof",
-    text: "Zum zweiten Mal durfte der Verein das Kürbisfest auf dem Irlenhof in Ferndorf begleiten.",
-  },
-  {
-    title: "Frühschoppen zum 1. Mai",
-    text: "Bei gutem Wetter gab es ein buntes Programm aus klassischer und moderner Blasmusik.",
-  },
-  {
-    title: "Frühlingskonzert in Hilchenbach",
-    text: "Das Frühjahrskonzert bot einen abwechslungsreichen Mix aus traditioneller Literatur und moderner Musik.",
-  },
-];
-
-export default function HomePage() {
   return (
     <>
       <section className="container-page py-16 sm:py-24">
@@ -69,8 +40,8 @@ export default function HomePage() {
                 Platzhalter für Titelbild oder Video
               </p>
               <p className="mt-4 text-sm leading-7 text-slate-600">
-                Hier kann später ein großes Vereinsfoto, das Imagevideo oder ein stimmungsvolles
-                Konzertbild eingebunden werden.
+                In der finalen Version können hier ein Hero-Bild aus Vercel Blob oder ein
+                eingebundenes Video erscheinen.
               </p>
             </div>
           </div>
@@ -80,9 +51,12 @@ export default function HomePage() {
       <Section eyebrow="Aktuelles" title="Neuigkeiten aus dem Vereinsleben">
         <div className="grid gap-4 md:grid-cols-3">
           {newsItems.map((item) => (
-            <article key={item.title} className="card p-6">
-              <h3 className="text-xl font-semibold text-slate-900">{item.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{item.text}</p>
+            <article key={item.id} className="card p-6">
+              <p className="text-sm font-semibold text-[#7b1f3a]">{formatDate(item.publishedAt)}</p>
+              <h3 className="mt-2 text-xl font-semibold text-slate-900">{item.title}</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                {item.excerpt ?? item.content ?? ""}
+              </p>
             </article>
           ))}
         </div>
@@ -91,10 +65,10 @@ export default function HomePage() {
       <Section eyebrow="Termine" title="Die nächsten Veranstaltungen">
         <div className="grid gap-4 md:grid-cols-3">
           {upcomingEvents.map((event) => (
-            <article key={event.title} className="card p-6">
-              <p className="text-sm font-semibold text-[#7b1f3a]">{event.date}</p>
+            <article key={event.id} className="card p-6">
+              <p className="text-sm font-semibold text-[#7b1f3a]">{formatDate(event.startsAt)}</p>
               <h3 className="mt-2 text-xl font-semibold text-slate-900">{event.title}</h3>
-              <p className="mt-2 text-sm text-slate-600">{event.place}</p>
+              <p className="mt-2 text-sm text-slate-600">{event.location ?? "Ort folgt"}</p>
             </article>
           ))}
         </div>
