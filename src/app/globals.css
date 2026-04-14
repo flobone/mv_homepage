@@ -95,3 +95,65 @@ a {
   border-color: #1f4d7a;
   color: #1f4d7a;
 }
+
+.chronik-section {
+  scroll-margin-top: 7rem;
+}
+
+.chronik-timeline {
+  position: relative;
+}
+
+.chronik-timeline__rail {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  width: 2px;
+  background: rgba(31, 77, 122, 0.15);
+}
+
+.chronik-timeline__link {
+  position: relative;
+  display: block;
+  padding-left: 2.25rem;
+  color: rgb(71 85 105);
+}
+
+.chronik-timeline__link:hover {
+  color: #1f4d7a;
+}
+
+.chronik-timeline__link--active {
+  color: #1f4d7a;
+}
+
+.chronik-timeline__dot {
+  position: absolute;
+  left: 0.43rem;
+  top: 0.45rem;
+  height: 0.7rem;
+  width: 0.7rem;
+  border-radius: 9999px;
+  border: 2px solid #1f4d7a;
+  background: white;
+}
+
+.chronik-timeline__link--active .chronik-timeline__dot {
+  background: #1f4d7a;
+}
+
+.chronik-timeline__year {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chronik-timeline__label {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
